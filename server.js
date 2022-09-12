@@ -9,7 +9,7 @@ const isAuth = require("./middleware/auth");
 const cors = require("cors");
 const path = require("path");
 
-const { makeExecutableSchema } = require("graphql-tools");
+// const { makeExecutableSchema } = require("graphql-tools");
 const { mergeTypeDefs, mergeResolvers } = require("@graphql-tools/merge");
 const { loadFilesSync } = require("@graphql-tools/load-files");
 

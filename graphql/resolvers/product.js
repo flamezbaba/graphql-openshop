@@ -1,5 +1,5 @@
-const { artifacts } = require("hardhat");
 const Product = require("../../models/product");
+const { transformProduct } = require("../transform");
 
 module.exports = {
   Query: {
@@ -7,10 +7,7 @@ module.exports = {
       try {
         const records = await Product.find();
         return records.map((data) => {
-          return {
-            ...data._doc,
-            _id: data.id,
-          };
+          return transformProduct(data);
         });
       } catch (err) {
         throw err;
@@ -21,7 +18,7 @@ module.exports = {
   Mutation: {
     createProduct: async (parent, args, { req }) => {
       if (!req.isAuth) {
-        throw new Error("Authorized");
+        throw new Error("Un-Authorized");
       }
 
       try {
@@ -30,19 +27,18 @@ module.exports = {
         });
 
         if (existingRecord) {
-          throw new Error("Product Name Used");
+          throw new Error("Product Name already Used");
         }
         const newRecord = new Product({
           name: args.input.name,
           description: args.input.description,
           amount: args.input.amount,
+          pictures: [],
+          creator: req.userId,
         });
 
         const result = await newRecord.save();
-        return {
-          ...result._doc,
-          _id: result.id,
-        };
+        return transformProduct(result);
       } catch (err) {
         throw err;
       }
@@ -53,7 +49,7 @@ module.exports = {
       }
 
       try {
-        const record = await Product.findById(args.input.id);
+        const record = await Product.findById(args.id);
 
         if (!record) {
           throw new Error("Product Not Found");
@@ -67,16 +63,35 @@ module.exports = {
           throw new Error(`Product name '${args.input.name}' already used`);
         }
 
-        const doc = await Product.findByIdAndUpdate(args.input.id, {
+        await Product.findByIdAndUpdate(args.id, {
           name: args.input.name || record._doc.name,
           description: args.input.description || record._doc.description,
           amount: args.input.amount || record._doc.amount,
         });
 
-        return {
-          ...doc._doc,
-          _id: doc.id,
-        };
+        const doc = await Product.findById(args.id);
+
+        return transformProduct(doc);
+      } catch (err) {
+        throw err;
+      }
+    },
+    deleteProduct: async (parent, args, { req }) => {
+      if (!req.isAuth) {
+        throw new Error("Authorized");
+      }
+
+      try {
+        const record = await Product.findById({ _id: args.id });
+        if (!record) {
+          throw new Error("Product Not Found");
+        }
+
+        await Product.deleteOne({
+          _id: args.id,
+        });
+
+        return transformProduct(record);
       } catch (err) {
         throw err;
       }
