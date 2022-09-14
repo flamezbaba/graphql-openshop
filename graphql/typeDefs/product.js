@@ -8,6 +8,8 @@ module.exports = gql`
     amount: Float!
     pictures: [String]
     creator: Account!
+    createdAt: String
+    updatedAt: String
   }
 
   input ProductInput {
